@@ -2,22 +2,13 @@ import EasyStar from "easystarjs";
 
 import tilemapPng from '../assets/tileset/Dungeon_Tileset.png'
 import dungeonRoomJson from '../assets/dungeon_room.json'
-import auroraSpriteSheet from '../assets/sprites/characters/aurora.png'
-import punkSpriteSheet from '../assets/sprites/characters/punk.png'
-import blueSpriteSheet from '../assets/sprites/characters/blue.png'
-import yellowSpriteSheet from '../assets/sprites/characters/yellow.png'
-import greenSpriteSheet from '../assets/sprites/characters/green.png'
-import slimeSpriteSheet from '../assets/sprites/characters/slime.png'
 import CharacterFactory from "../src/characters/character_factory";
-import Footsteps from "../assets/audio/footstep_ice_crunchy_run_01.wav";
 import GroupAlignment from "../src/ai/steerings/group_alignment";
 import SteeringDriven from "../src/ai/behaviour/steering_driven";
 
 let GroupAlignmentScene = new Phaser.Class({
 
     Extends: Phaser.Scene,
-    characterFrameConfig: {frameWidth: 31, frameHeight: 31},
-    slimeFrameConfig: {frameWidth: 32, frameHeight: 32},
 
     initialize: function GroupAligmentScene() {
         Phaser.Scene.call(this, {key: 'GroupAlignmentScene'});
@@ -27,17 +18,10 @@ let GroupAlignmentScene = new Phaser.Class({
         //loading map tiles and json with positions
         this.load.image("tiles", tilemapPng);
         this.load.tilemapTiledJSON("map", dungeonRoomJson);
-
-        //loading spitesheets
-        this.load.spritesheet('aurora', auroraSpriteSheet, this.characterFrameConfig);
-        this.load.spritesheet('blue', blueSpriteSheet, this.characterFrameConfig);
-        this.load.spritesheet('green', greenSpriteSheet, this.characterFrameConfig);
-        this.load.spritesheet('yellow', yellowSpriteSheet, this.characterFrameConfig);
-        this.load.spritesheet('punk', punkSpriteSheet, this.characterFrameConfig);
-        this.load.spritesheet('slime', slimeSpriteSheet, this.slimeFrameConfig);
-        this.load.audio('footsteps', Footsteps);
+        this.characterFactory = new CharacterFactory(this);
     },
     create: function () {
+        this.characterFactory.loadAnimations();
 
         this.gameObjects = [];
         const map = this.make.tilemap({key: "map"});
@@ -71,7 +55,6 @@ let GroupAlignmentScene = new Phaser.Class({
 
         this.physics.world.bounds.width = map.widthInPixels;
         this.physics.world.bounds.height = map.heightInPixels;
-        this.characterFactory = new CharacterFactory(this);
 
         // Creating characters
         this.characters = { }
@@ -83,19 +66,19 @@ let GroupAlignmentScene = new Phaser.Class({
         this.characters.blue = this.characterFactory.buildCharacter('blue', 70, 150, { player: false });
         this.characters.green = this.characterFactory.buildCharacter('green', 100, 150, { player: false });
         this.characters.yellow = this.characterFactory.buildCharacter('yellow', 130, 150, { player: false  });
-        
+
         for (let i = 0; i < 15; i++) {
             this.characters['c' + i] = this.characterFactory.buildCharacter('blue', 160 + 30 * i, 150, { player: false });
         }
 
 
         const characters = Object.values(this.characters);
-        
+
         characters.forEach(c => {
             this.gameObjects.push(c);
             this.physics.add.collider(c, worldLayer);
             this.physics.add.collider(c, this.player);
-            
+
             const neighbor = characters.filter(o => o !== c);
             neighbor.push(this.player);
             c.addBehaviour(new SteeringDriven([new GroupAlignment(c, neighbor)]))
